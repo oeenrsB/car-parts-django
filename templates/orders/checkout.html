@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="bi bi-credit-card"></i> Checkout</h2>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Shipping Address -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Shipping Address</h5>
+                </div>
+                <div class="card-body">
+                    {% if addresses %}
+                    <div class="mb-3">
+                        <label class="form-label">Select Address</label>
+                        {% for address in addresses %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="address_id" id="address{{ address.id }}" value="{{ address.id }}" {% if address.is_default %}checked{% endif %} required>
+                            <label class="form-check-label" for="address{{ address.id }}">
+                                <strong>{{ address.street }}</strong>, {{ address.city }}
+                                {% if address.is_default %}<span class="badge bg-primary">Default</span>{% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'customers:add_address' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add New Address
+                    </a>
+                    {% else %}
+                    <p class="text-muted mb-3">No saved addresses found.</p>
+                    <a href="{% url 'customers:add_address' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Address
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-credit-card-2-front"></i> Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="card" checked>
+                        <label class="form-check-label" for="credit_card">
+                            <i class="bi bi-credit-card"></i> Credit/Debit Card
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
+                        <label class="form-check-label" for="paypal">
+                            <i class="bi bi-paypal"></i> PayPal
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod">
+                        <label class="form-check-label" for="cod">
+                            <i class="bi bi-cash"></i> Cash on Delivery
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Notes -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Order Notes (Optional)</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" name="customer_notes" rows="3" placeholder="Special delivery instructions..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Items ({{ cart.items.count }})</h6>
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <small>{{ item.product.title|truncatewords:4 }}</small><br>
+                            <small class="text-muted">Qty: {{ item.quantity }}</small>
+                        </div>
+                        <small>${{ item.subtotal }}</small>
+                    </div>
+                    {% endfor %}
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <strong>${{ cart.total }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping:</span>
+                        <strong>$10.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax (10%):</span>
+                        <strong>${{ tax }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <h4 class="text-primary mb-0">${{ grand_total }}</h4>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-circle"></i> Place Order
+                    </button>
+
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        By placing your order, you agree to our terms and conditions
+                    </p>
+                </div>
+            </div>
+
+            <!-- Security Badge -->
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-lock-fill text-success" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2"><small>Secure SSL Encrypted Payment</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

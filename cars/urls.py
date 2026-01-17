@@ -16,11 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from django.http import HttpResponse
 
-def test_view(request):
-    return HttpResponse("Main URL works!")
+def home(request):
+    return HttpResponse("Welcome to the Cars Homepage!")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('products.urls')),      # Homepage & products
+    path('vehicles/', include('vehicles.urls')),  # Vehicle selection
+    path('customers/', include('customers.urls')),  # Customer management
+    path('cart/', include('orders.urls')),        # Shopping cart
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

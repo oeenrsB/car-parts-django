@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>My Profile</h2>
+<p>Welcome, {{ customer.user.first_name }}!</p>
+<p>Membership: {{ customer.get_membership_display }}</p>
+<p>Email: {{ customer.email }}</p>
+
+<h3>My Addresses</h3>
+<ul>
+{% for address in addresses %}
+    <li>{{ address }} {% if address.is_default %}(Default){% endif %}</li>
+{% empty %}
+    <li>No addresses saved.</li>
+{% endfor %}
+</ul>
+
+<h3>My Vehicles</h3>
+<ul>
+{% for cv in vehicles %}
+    <li>{{ cv.vehicle }} 
+        {% if cv.nickname %} ({{ cv.nickname }}) {% endif %}
+        {% if cv.is_primary %} — Primary {% endif %}
+    </li>
+{% empty %}
+    <li>No vehicles saved.</li>
+{% endfor %}
+</ul>
+
+<a href="{% url 'customers:logout' %}">Logout</a>
+{% endblock %}

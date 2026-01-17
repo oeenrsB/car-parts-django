@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.title }} - Car Parts Store{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'products:home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+        <li class="breadcrumb-item active">{{ product.title }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Product Images -->
+    <div class="col-md-6">
+        <div class="card">
+            {% if product.images.all %}
+            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for image in product.images.all %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ image.alt_text }}" style="height: 400px; object-fit: contain;">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if product.images.count > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 400px;">
+                <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Product Details -->
+    <div class="col-md-6">
+        <h1 class="h2 mb-3">{{ product.title }}</h1>
+        
+        <div class="mb-3">
+            <span class="badge bg-{{ product.get_product_type_display|lower }}">{{ product.get_product_type_display }}</span>
+            {% if product.inventory > 0 %}
+            <span class="badge bg-success">In Stock ({{ product.inventory }} available)</span>
+            {% else %}
+            <span class="badge bg-danger">Out of Stock</span>
+            {% endif %}
+        </div>
+
+        <p class="text-muted mb-2">
+            <strong>Category:</strong> {{ product.category.name }}
+        </p>
+
+        {% if product.manufacturer %}
+        <p class="text-muted mb-2">
+            <strong>Manufacturer:</strong> {{ product.manufacturer.name }}
+        </p>
+        {% endif %}
+
+        {% if product.sku %}
+        <p class="text-muted mb-2">
+            <strong>SKU:</strong> {{ product.sku }}
+        </p>
+        {% endif %}
+
+        {% if product.part_number %}
+        <p class="text-muted mb-2">
+            <strong>Part Number:</strong> {{ product.part_number }}
+        </p>
+        {% endif %}
+
+        <hr>
+
+        <!-- Price -->
+        <h2 class="text-primary mb-4">${{ product.unit_price }}</h2>
+
+        <!-- Vehicle Compatibility -->
+        {% if fits_vehicle %}
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i> <strong>This part fits your vehicle!</strong><br>
+            <small>{{ request.session.selected_vehicle_name }}</small>
+        </div>
+        {% elif request.session.selected_vehicle_name %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i> <strong>Compatibility unknown</strong><br>
+            <small>This part may not fit {{ request.session.selected_vehicle_name }}</small>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 
+            <a href="{% url 'vehicles:select_vehicle' %}" class="alert-link">Select your vehicle</a> to check compatibility
+        </div>
+        {% endif %}
+
+        <!-- Add to Cart -->
+        {% if product.inventory > 0 %}
+        <form method="post" action="{% url 'orders:add_to_cart' product.id %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-2">
+                <div class="col-auto">
+                    <input type="number" class="form-control" name="quantity" value="1" min="1" max="{{ product.inventory }}" style="width: 80px;">
+                </div>
+                <div class="col">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-cart-plus"></i> Add to Cart
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <button class="btn btn-secondary btn-lg w-100 mb-4" disabled>
+            Out of Stock
+        </button>
+        {% endif %}
+
+        <!-- Warranty -->
+        {% if product.warranty_months %}
+        <p class="text-muted">
+            <i class="bi bi-shield-check"></i> {{ product.warranty_months }} month warranty
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Description & Specs -->
+<div class="row mt-5">
+    <div class="col-12">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#description">Description</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#specifications">Specifications</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#fitment">Vehicle Fitment</a>
+            </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 p-4">
+            <!-- Description Tab -->
+            <div class="tab-pane fade show active" id="description">
+                <p>{{ product.description|linebreaks }}</p>
+            </div>
+
+            <!-- Specifications Tab -->
+            <div class="tab-pane fade" id="specifications">
+                {% if specifications %}
+                <table class="table table-striped">
+                    <tbody>
+                        {% for spec in specifications %}
+                        <tr>
+                            <th style="width: 200px;">{{ spec.name }}</th>
+                            <td>{{ spec.value }} {% if spec.unit %}{{ spec.unit }}{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No specifications available.</p>
+                {% endif %}
+            </div>
+
+            <!-- Fitment Tab -->
+            <div class="tab-pane fade" id="fitment">
+                {% if product.fitments.all %}
+                <h5 class="mb-3">This part fits the following vehicles:</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Make</th>
+                                <th>Model</th>
+                                <th>Trim</th>
+                                <th>Position</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fitment in product.fitments.all %}
+                            <tr>
+                                <td>{{ fitment.vehicle.year }}</td>
+                                <td>{{ fitment.vehicle.model.make.name }}</td>
+                                <td>{{ fitment.vehicle.model.name }}</td>
+                                <td>{{ fitment.vehicle.trim|default:"-" }}</td>
+                                <td>{{ fitment.position|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Universal fit - compatible with most vehicles. Please verify before purchasing.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

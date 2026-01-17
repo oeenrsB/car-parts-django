@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Your Vehicle{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-car-front"></i> Select Your Vehicle</h3>
+            </div>
+            <div class="card-body p-5">
+                <p class="lead text-center mb-4">
+                    Tell us what you drive and we'll show you parts that fit
+                </p>
+
+                <form method="post" id="vehicleForm">
+                    {% csrf_token %}
+                    
+                    <!-- Make Selection -->
+                    <div class="mb-4">
+                        <label for="make" class="form-label fw-bold">
+                            <i class="bi bi-1-circle-fill text-primary"></i> Select Make
+                        </label>
+                        <select class="form-select form-select-lg" id="make" name="make" required>
+                            <option value="">Choose manufacturer...</option>
+                            {% for make in makes %}
+                            <option value="{{ make.id }}">{{ make.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="mb-4">
+                        <label for="model" class="form-label fw-bold">
+                            <i class="bi bi-2-circle-fill text-primary"></i> Select Model
+                        </label>
+                        <select class="form-select form-select-lg" id="model" name="model" required disabled>
+                            <option value="">First select a make...</option>
+                        </select>
+                    </div>
+
+                    <!-- Vehicle (Year/Trim) Selection -->
+                    <div class="mb-4">
+                        <label for="vehicle" class="form-label fw-bold">
+                            <i class="bi bi-3-circle-fill text-primary"></i> Select Year & Trim
+                        </label>
+                        <select class="form-select form-select-lg" id="vehicle" name="vehicle_id" required disabled>
+                            <option value="">First select a model...</option>
+                        </select>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn" disabled>
+                        <i class="bi bi-check-circle"></i> Find Parts for My Vehicle
+                    </button>
+                </form>
+
+                <!-- Save to Garage (for logged in users) -->
+                {% if user.is_authenticated %}
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> Vehicle will be saved to your garage
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recently Selected -->
+        {% if recent_vehicles %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recently Selected Vehicles</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for vehicle in recent_vehicles %}
+                <a href="#" class="list-group-item list-group-item-action"  /a><!--onclick="selectVehicle({{ vehicle.id }})">-->
+                    <i class="bi bi-car-front"></i> {{ vehicle }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const makeSelect = document.getElementById('make');
+    const modelSelect = document.getElementById('model');
+    const vehicleSelect = document.getElementById('vehicle');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // When make is selected, load models
+    makeSelect.addEventListener('change', function() {
+        const makeId = this.value;
+        
+        // Reset dependent dropdowns
+        modelSelect.innerHTML = '<option value="">Loading...</option>';
+        modelSelect.disabled = true;
+        vehicleSelect.innerHTML = '<option value="">First select a model...</option>';
+        vehicleSelect.disabled = true;
+        submitBtn.disabled = true;
+
+        if (makeId) {
+            // Fetch models for selected make
+            fetch(`{% url 'vehicles:select_vehicle' %}?make=${makeId}`)
+                .then(response => response.text())
+                .then(html => {
+                    // Parse the response to get models
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const models = doc.querySelectorAll('#model option');
+                    
+                    modelSelect.innerHTML = '<option value="">Choose model...</option>';
+                    models.forEach(opt => {
+                        if (opt.value) {
+                            modelSelect.appendChild(opt.cloneNode(true));
+                        }
+                    });
+                    modelSelect.disabled = false;
+                });
+        }
+    });
+
+    // When model is selected, load vehicles
+    modelSelect.addEventListener('change', function() {
+        const modelId = this.value;
+        
+        vehicleSelect.innerHTML = '<option value="">Loading...</option>';
+        vehicleSelect.disabled = true;
+        submitBtn.disabled = true;
+
+        if (modelId) {
+            // Fetch vehicles for selected model
+            fetch(`{% url 'vehicles:select_vehicle' %}?model=${modelId}`)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const vehicles = doc.querySelectorAll('#vehicle option');
+                    
+                    vehicleSelect.innerHTML = '<option value="">Choose year & trim...</option>';
+                    vehicles.forEach(opt => {
+                        if (opt.value) {
+                            vehicleSelect.appendChild(opt.cloneNode(true));
+                        }
+                    });
+                    vehicleSelect.disabled = false;
+                });
+        }
+    });
+
+    // Enable submit when vehicle is selected
+    vehicleSelect.addEventListener('change', function() {
+        submitBtn.disabled = !this.value;
+    });
+});
+</script>
+{% endblock %}
